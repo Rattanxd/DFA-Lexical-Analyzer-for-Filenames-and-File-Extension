@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fb" />
+    <title>File DFA — Filename Lexer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="File DFA home">
+          <span class="brand-mark">δ</span><span>FILE<span class="brand-light">DFA</span></span>
+        </a>
+        <span class="course-tag"><span class="live-dot"></span> AUTOMATA THEORY PROJECT</span>
+      </header>
+
+      <section class="intro">
+        <div class="eyebrow"><span class="eyebrow-line"></span> DETERMINISTIC FINITE AUTOMATON</div>
+        <h1>Filename <span>Lexer.</span></h1>
+        <p class="intro-copy">Run filenames through a deterministic state machine.<br class="desktop-break" /> Get a clear accept/reject result and see the tokens.</p>
+      </section>
+
+      <section class="rules" aria-label="Filename rules">
+        <div class="rule-item"><span class="rule-number">01</span><span><b>Body</b><small>A–Z, a–z, 0–9, underscore</small></span></div>
+        <div class="rule-divider"></div>
+        <div class="rule-item"><span class="rule-number">02</span><span><b>Boundary</b><small>Exactly one period</small></span></div>
+        <div class="rule-divider"></div>
+        <div class="rule-item"><span class="rule-number">03</span><span><b>Extensions</b><small>.pdf · .txt · .png · .jpg</small></span></div>
+      </section>
+
+      <section class="workspace">
+        <div class="section-heading">
+          <div><span class="section-kicker">INPUT</span><h2>Check your files</h2></div>
+          <button class="button button-quiet" id="clear-button" type="button" disabled>Clear all</button>
+        </div>
+
+        <label class="dropzone" id="dropzone" for="file-input">
+          <input id="file-input" type="file" multiple />
+          <span class="upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14.5v3A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="drop-copy"><b>Drop files here <span>or browse</span></b><small>Any file type · Checked by filename only · Nothing is uploaded</small></span>
+          <span class="browse-button">Choose files <span aria-hidden="true">↗</span></span>
+        </label>
+
+        <div class="stats" aria-live="polite">
+          <article class="stat-card"><span class="stat-icon stat-total">▤</span><span class="stat-label">FILES CHECKED</span><strong id="total-count">0</strong></article>
+          <article class="stat-card"><span class="stat-icon stat-accepted">✓</span><span class="stat-label">ACCEPTED</span><strong id="accepted-count">0</strong></article>
+          <article class="stat-card"><span class="stat-icon stat-rejected">×</span><span class="stat-label">REJECTED</span><strong id="rejected-count">0</strong></article>
+        </div>
+
+        <section class="results-card" aria-label="File analysis results">
+          <div class="results-header">
+            <div><span class="section-kicker">OUTPUT</span><h2>Analysis results</h2></div>
+            <div class="filter-group" role="group" aria-label="Filter results">
+              <button class="filter-button active" data-filter="all" type="button">All <span id="all-filter-count">0</span></button>
+              <button class="filter-button" data-filter="accepted" type="button">Accepted <span id="accepted-filter-count">0</span></button>
+              <button class="filter-button" data-filter="rejected" type="button">Rejected <span id="rejected-filter-count">0</span></button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>FILENAME</th><th>RESULT</th><th>TOKENS / REJECTION REASONS</th></tr></thead>
+              <tbody id="results-body"></tbody>
+            </table>
+            <div class="empty-state" id="empty-state">
+              <span class="empty-symbol">{ }</span>
+              <b>Nothing to analyze yet</b>
+              <p>Choose files or drop them above to see the DFA results.</p>
+            </div>
+          </div>
+          <footer class="results-footer"><span><span class="footer-dot"></span> DFA SCAN READY</span><span>Files stay on your device</span></footer>
+        </section>
+      </section>
+
+      <footer class="page-footer"><span>DESIGNED FOR AUTOMATA THEORY</span><span>q₀ <i>→</i> q₁ <i>→</i> q₂</span></footer>
+    </main>
+  </body>
+</html>
