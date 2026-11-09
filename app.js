@@ -12,52 +12,97 @@ const clearButton = document.querySelector("#clear-button");
 
 // Scan manually, like a DFA: consume the filename body in q0, cross the dot
 // into q1, then accept only when q1 has consumed one exact supported extension.
+// Scan using a strict DFA: consume the body in q0, cross the dot into q1, 
+// and transition to a trap state (q3) if rules are violated.
 function analyzeFilename(filename) {
   let state = "q0";
   let body = "";
   let extension = "";
-  let dotCount = 0;
   const invalidCharacters = [];
+  const reasons = [];
 
   for (const character of filename) {
-    if (character === ".") {
-      dotCount += 1;
-      if (dotCount > 1) extension += character;
-      if (dotCount === 1) state = "q1";
-      continue;
-    }
+    switch (state) {
+      case "q0": // Reading filename body
+        if (character === ".") {
+          state = "q1";
+        } else {
+          const isBodyCharacter =
+            (character >= "a" && character <= "z") ||
+            (character >= "A" && character <= "Z") ||
+            (character >= "0" && character <= "9") ||
+            character === "_";
+            
+          if (isBodyCharacter) {
+            body += character;
+          } else {
+            invalidCharacters.push(character);
+            state = "q3"; // Transition to trap state
+          }
+        }
+        break;
 
-    if (state === "q0") {
-      const isBodyCharacter =
-        (character >= "a" && character <= "z") ||
-        (character >= "A" && character <= "Z") ||
-        (character >= "0" && character <= "9") ||
-        character === "_";
-      if (isBodyCharacter) body += character;
-      else invalidCharacters.push(character);
-    } else {
-      extension += character;
-      if (!((character >= "a" && character <= "z") || (character >= "A" && character <= "Z"))) {
-        invalidCharacters.push(character);
-      }
+      case "q1": // Reading extension
+        if (character === ".") {
+          reasons.push("Multiple dots are not allowed");
+          state = "q3"; // Transition to trap state
+        } else {
+          const isExtCharacter =
+            (character >= "a" && character <= "z") ||
+            (character >= "A" && character <= "Z");
+            
+          if (isExtCharacter) {
+            extension += character;
+          } else {
+            invalidCharacters.push(character);
+            state = "q3"; // Transition to trap state
+          }
+        }
+        break;
+
+      case "q3": // Trap (dead) state
+        // The machine is rejected, but we continue consuming characters 
+        // to gather all errors for a complete user-facing reason.
+        if (character === "." && !reasons.includes("Multiple dots are not allowed")) {
+          reasons.push("Multiple dots are not allowed");
+        } else if (character !== ".") {
+          const isValidAnywhere =
+            (character >= "a" && character <= "z") ||
+            (character >= "A" && character <= "Z") ||
+            (character >= "0" && character <= "9") ||
+            character === "_";
+          if (!isValidAnywhere) invalidCharacters.push(character);
+        }
+        break;
     }
   }
 
-  if (dotCount === 1 && VALID_EXTENSIONS.has(extension)) state = "q2";
+  // Acceptance check: Ends in q1 with a valid body and supported extension
+  if (state === "q1" && body.length > 0 && VALID_EXTENSIONS.has(extension)) {
+    state = "q2";
+  }
 
-  const reasons = [];
-  if (dotCount === 0) reasons.push("Missing extension boundary (.)");
-  if (dotCount > 1) reasons.push("Multiple dots are not allowed");
-  if (dotCount > 0 && body.length === 0) reasons.push("Filename body is empty");
+  // Compile final rejection reasons
+  if (state === "q0") reasons.push("Missing extension boundary (.)");
+  if (body.length === 0 && (state === "q1" || state === "q3")) {
+    if (!reasons.includes("Filename body is empty")) reasons.push("Filename body is empty");
+  }
   if (invalidCharacters.length) {
     const uniqueCharacters = [...new Set(invalidCharacters)];
     reasons.push(`Unsupported character(s): ${uniqueCharacters.map((char) => JSON.stringify(char)).join(", ")}`);
   }
-  if (dotCount > 0 && !VALID_EXTENSIONS.has(extension)) {
+  if (state === "q1" && !VALID_EXTENSIONS.has(extension)) {
     reasons.push(`Unsupported extension: .${extension}`);
   }
 
-  if (reasons.length || state !== "q2") return { accepted: false, tokens: "", reason: reasons.join(", ") || "Rejected by DFA" };
+  if (reasons.length || state !== "q2") {
+    return { 
+      accepted: false, 
+      tokens: "", 
+      reason: reasons.join(", ") || "Rejected by DFA" 
+    };
+  }
+
   return {
     accepted: true,
     tokens: `<FILENAME_BODY: ${body}> <DOT> <VALID_EXTENSION: ${extension}>`,
