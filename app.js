@@ -1,7 +1,8 @@
 "use strict";
 
-const VALID_EXTENSIONS = new Set(["pdf", "txt", "png", "jpg"]);
-const filesByName = new Map();
+// Added "mp3" and "mp4" to test the new alphanumeric extension support
+const VALID_EXTENSIONS = new Set(["pdf", "txt", "png", "jpg", "mp3", "mp4"]);
+const uploadedFiles = []; // Switched from Map to Array to prevent overwriting
 let activeFilter = "all";
 
 const input = document.querySelector("#file-input");
@@ -10,10 +11,6 @@ const resultsBody = document.querySelector("#results-body");
 const emptyState = document.querySelector("#empty-state");
 const clearButton = document.querySelector("#clear-button");
 
-// Scan manually, like a DFA: consume the filename body in q0, cross the dot
-// into q1, then accept only when q1 has consumed one exact supported extension.
-// Scan using a strict DFA: consume the body in q0, cross the dot into q1, 
-// and transition to a trap state (q3) if rules are violated.
 function analyzeFilename(filename) {
   let state = "q0";
   let body = "";
@@ -23,7 +20,7 @@ function analyzeFilename(filename) {
 
   for (const character of filename) {
     switch (state) {
-      case "q0": // Reading filename body
+      case "q0":
         if (character === ".") {
           state = "q1";
         } else {
@@ -42,14 +39,15 @@ function analyzeFilename(filename) {
         }
         break;
 
-      case "q1": // Reading extension
+      case "q1":
         if (character === ".") {
           reasons.push("Multiple dots are not allowed");
           state = "q3"; // Transition to trap state
         } else {
           const isExtCharacter =
             (character >= "a" && character <= "z") ||
-            (character >= "A" && character <= "Z");
+            (character >= "A" && character <= "Z") ||
+            (character >= "0" && character <= "9"); // Alphanumeric support added
             
           if (isExtCharacter) {
             extension += character;
@@ -61,8 +59,6 @@ function analyzeFilename(filename) {
         break;
 
       case "q3": // Trap (dead) state
-        // The machine is rejected, but we continue consuming characters 
-        // to gather all errors for a complete user-facing reason.
         if (character === "." && !reasons.includes("Multiple dots are not allowed")) {
           reasons.push("Multiple dots are not allowed");
         } else if (character !== ".") {
@@ -112,7 +108,7 @@ function analyzeFilename(filename) {
 
 function addFiles(fileList) {
   for (const file of fileList) {
-    if (!filesByName.has(file.name)) filesByName.set(file.name, file);
+    uploadedFiles.push(file); // Push to array instead of Map
   }
   render();
 }
@@ -125,9 +121,10 @@ function makeCell(text, className) {
 }
 
 function render() {
-  const records = [...filesByName.values()].map((file) => ({ file, ...analyzeFilename(file.name) }));
+  const records = uploadedFiles.map((file) => ({ file, ...analyzeFilename(file.name) }));
   const accepted = records.filter((record) => record.accepted).length;
   const rejected = records.length - accepted;
+  
   document.querySelector("#total-count").textContent = records.length;
   document.querySelector("#accepted-count").textContent = accepted;
   document.querySelector("#rejected-count").textContent = rejected;
@@ -138,6 +135,7 @@ function render() {
 
   const visible = records.filter((record) => activeFilter === "all" || (activeFilter === "accepted") === record.accepted);
   resultsBody.replaceChildren();
+  
   for (const record of visible) {
     const row = document.createElement("tr");
     row.append(makeCell(record.file.name));
@@ -150,6 +148,7 @@ function render() {
     row.append(makeCell(record.accepted ? record.tokens : record.reason, record.accepted ? "token" : "reason"));
     resultsBody.append(row);
   }
+  
   emptyState.hidden = visible.length > 0;
   if (records.length === 0) {
     emptyState.querySelector("b").textContent = "Nothing to analyze yet";
@@ -162,14 +161,17 @@ function render() {
 
 input.addEventListener("change", (event) => {
   addFiles(event.target.files);
-  input.value = "";
+  input.value = ""; // Clear input immediately after upload 
 });
+
 clearButton.addEventListener("click", () => {
-  filesByName.clear();
+  uploadedFiles.length = 0; // Empty the array
+  input.value = ""; // Clear the HTML file input so identical files trigger 'change' again
   activeFilter = "all";
   document.querySelectorAll(".filter-button").forEach((button) => button.classList.toggle("active", button.dataset.filter === "all"));
   render();
 });
+
 document.querySelectorAll(".filter-button").forEach((button) => {
   button.addEventListener("click", () => {
     activeFilter = button.dataset.filter;
@@ -184,12 +186,14 @@ for (const eventName of ["dragenter", "dragover"]) {
     dropzone.classList.add("dragging");
   });
 }
+
 for (const eventName of ["dragleave", "drop"]) {
   dropzone.addEventListener(eventName, (event) => {
     event.preventDefault();
     dropzone.classList.remove("dragging");
   });
 }
+
 dropzone.addEventListener("drop", (event) => addFiles(event.dataTransfer.files));
 
 render();
