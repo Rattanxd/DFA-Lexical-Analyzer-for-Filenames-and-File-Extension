@@ -45,8 +45,29 @@ h2 { font-size: 17px; letter-spacing: -.025em; margin: 5px 0 0; font-weight: 700
 .button-quiet:not(:disabled):hover { color: var(--red); }
 .button-quiet:disabled { opacity: .45; cursor: default; }
 .dropzone { margin-top: 17px; min-height: 111px; padding: 20px 22px; display: flex; align-items: center; gap: 16px; border: 1px dashed #bdcbc1; border-radius: 12px; background: rgba(255,255,255,.65); cursor: pointer; transition: .18s ease; }
-.dropzone:hover, .dropzone.dragging { border-color: var(--green); background: #f0f7f2; }
-.dropzone input { display: none; }
+.dropzone:hover, .dropzone.dragging, .dropzone:focus-within { 
+  border-color: var(--green); 
+  background: #f0f7f2; 
+}
+
+/* Add a visible outline for keyboard users */
+.dropzone:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* Visually hide the input without removing it from the keyboard tab order */
+.dropzone input { 
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .upload-icon { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; border-radius: 12px; color: var(--green); background: var(--mint); }
 .upload-icon svg { width: 23px; height: 23px; }
 .drop-copy { flex: 1; }
